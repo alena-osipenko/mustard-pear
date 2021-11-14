@@ -1,11 +1,26 @@
 <template>
-  <transition name="fade">
-    <div v-if="component" class="modal-mask" @click="close()">
+  <transition v-if="show" name="fade">
+    <div class="modal-mask" @click="close()">
       <div class="modal-container" @click.stop>
         <span class="close-button" @click="close()" />
         <div class="modalbody">
           <transition name="fade">
-            <component :is="component" :payload="payload" @exitModal="close" />
+            <div>
+              <h1 class="modalbody-title">Кредитный калькулятор</h1>
+              <b-field label="Сумма кредита">
+                <b-input v-model="loanAmount" type="text" />
+              </b-field>
+              <b-field label="Процентная ставка">
+                <b-input v-model="interestRate" type="text" />
+              </b-field>
+              <b-field label="Срок кредита (мес)">
+                <b-input v-model="terms" type="text" />
+              </b-field>
+              <b-button type="is-primary" class="mt-6 ml-0" @click="calculate">Рассчитать</b-button>
+              <div v-if="monthlyPayment" class="mt-3">
+                <b>Сумма ежемесячного платежа:</b> {{ monthlyPayment }}&nbsp;руб.
+              </div>
+            </div>
           </transition>
         </div>
       </div>
@@ -14,22 +29,20 @@
 </template>
 
 <script>
+import axios from "axios"
+
 export default {
   name: "GlobalModal",
   components: {},
-  props: {
-    component: {
-      type: Function,
-      default: null,
-    },
-    payload: {
-      type: Object,
-      default: null,
-    },
-  },
   mixins: [],
+  props: ["show"],
   data() {
-    return {}
+    return {
+      loanAmount: "",
+      interestRate: "",
+      terms: "",
+      monthlyPayment: null
+    }
   },
   beforeCreate() {},
   created() {},
@@ -42,8 +55,23 @@ export default {
   },
   computed: {},
   methods: {
+    calculate() {
+      axios
+        .get("https://mortgage-monthly-payment-calculator.p.rapidapi.com/revotek-finance/mortgage/monthly-payment", {
+          headers: {
+            "x-rapidapi-host": "mortgage-monthly-payment-calculator.p.rapidapi.com",
+            "x-rapidapi-key": "2e13487b9dmshc2bdd6264bdfa50p155269jsn8ad65797ec4b"
+          },
+          params: {
+            loanAmount: this.loanAmount, interestRate: this.interestRate, terms: this.terms
+          },
+        })
+        .then((res) => {
+          this.monthlyPayment = Math.round(res.data.monthlyPayment)
+        })
+    },
     close(result = null) {
-      this.$emit("exitModal", result)
+      this.$emit("exit-modal", result)
     },
     closeOnKeyDown(e) {
       if (e.keyCode === 27) {
@@ -62,7 +90,7 @@ export default {
 <style lang="scss" scoped>
 .modal-mask {
   position: fixed;
-  z-index: 30; // over navbar, under delete dialog
+  z-index: 1002;
   left: 0;
   top: 0;
   width: 100%;
@@ -81,13 +109,16 @@ export default {
   border-radius: 5px;
   box-shadow: 0px 5px 30px rgba(0, 0, 0, 0.2);
   margin-top: $stickyNavHeight * 2;
-  padding: 10px;
+  padding: 16px;
   display: flex;
   align-self: flex-start;
   flex-direction: column;
 
   h1 {
+    margin: 0 0 36px;
     text-align: center;
+    font-size: 24px;
+    font-weight: 600;
   }
 }
 
@@ -96,7 +127,7 @@ export default {
   width: 100%;
   height: 100%;
   display: block;
-  margin-top: $stickyNavHeight;
+  margin-top: 30px;
 }
 
 .close-button {

@@ -29,9 +29,18 @@ export default {
   methods: {
     setCoords(region) {
       this.coords = region
-      this.map.panTo(new L.LatLng(...region))
-      L.marker(region, { icon: this.icon }).addTo(this.map)
-    },
+
+      if (!this.coords.length) return
+
+      if (this.coords[0] && this.coords[0].length > 1) {
+        const polygon = L.polygon(this.coords[0], { color: "#3388ff" })
+        polygon.addTo(this.map);
+        this.map.fitBounds(polygon.getBounds());
+      } else {
+        this.map.panTo(new L.LatLng(...region));
+        L.marker(region, { icon: this.icon }).addTo(this.map)
+      }
+    }
   },
   watch: {
     selectedRegion: function (region) {
@@ -77,6 +86,7 @@ export default {
       const type = e.layerType
       this.layer = e.layer
       this.coords = e.layer._latlngs
+      console.log(24, this.layer)
       this.editableLayers.addLayer(this.layer)
     })
 

@@ -15,24 +15,6 @@
         </option>
       </b-select>
     </b-field>
-    <b-field label="Выберите район">
-      <b-select
-        v-if="!isMapSelection"
-        v-model="selectedRegion"
-        placeholder="Select a character"
-        expanded
-      >
-        <option
-          v-for="region in regions"
-          :key="region.key"
-          :value="region.name"
-
-        >
-          {{ region.name }}
-        </option>
-      </b-select>
-      <div v-else>ss</div>
-    </b-field>
 
     <b-field label="Вариант возделывания">
       <b-select
@@ -49,6 +31,27 @@
         </option>
       </b-select>
     </b-field>
+    <b-field v-if="!isMapSelection" label="Выберите район">
+      <b-select
+        v-model="selectedRegion"
+        placeholder="Select a character"
+        expanded
+      >
+        <option
+          v-for="region in regions"
+          :key="region.key"
+          :value="region.name"
+        >
+          {{ region.name }}
+        </option>
+      </b-select>
+    </b-field>
+    <div v-else>
+      <a class="link underline blue hover-orange mr-auto"
+      >Выбрана область на карте</a
+      >
+    </div>
+
     <div class="flex mt4" :class="{ 'flex-column': showAdvance }">
       <a
         class="link underline blue hover-orange mr-auto"
@@ -61,29 +64,29 @@
           <b-input v-model="square" />
         </b-field>
         <b-field label="Площадь защищенного грунта, га">
-          <b-input v-model="name" />
+          <b-input v-model="area" />
         </b-field>
         <b-field
           label="Основные производственные фонды с.-х. назначения, тыс. руб."
         >
-          <b-input v-model="name" />
+          <b-input v-model="p6" />
         </b-field>
         Потребность в ресурсах
         <b-field label="Металл, бетон и т.д., т/га, м3/га">
-          <b-input v-model="name" /> </b-field
+          <b-input v-model="p5" /> </b-field
         ><b-field label="Удобрения, средства защиты растений, кг/га">
-          <b-input v-model="name" />
+          <b-input v-model="p4" />
         </b-field>
         <b-field label="Дизельное топливо, л/га">
-          <b-input v-model="name" />
+          <b-input v-model="p3" />
         </b-field>
         <b-field label="Электроэнергия кВт * Га">
-          <b-input v-model="name" />
+          <b-input v-model="p2" />
         </b-field>
         <b-field
           label="Отопление по видам топлива и общая потребность в энергии, гДж/га"
         >
-          <b-input v-model="name" />
+          <b-input v-model="p1" />
         </b-field>
       </div>
       <b-button type="is-primary" @click="calculate">Рассчитать</b-button>
@@ -101,6 +104,13 @@ export default {
   data() {
     return {
       square: "",
+      area: "",
+      p1: "",
+      p2: "",
+      p3: "",
+      p4: "",
+      p5: "",
+      p6: "",
       cultures: [
         { key: 1, name: "Картофель" },
         { key: 2, name: "Капуста" },
@@ -117,7 +127,7 @@ export default {
         { key: 1, name: "Йошкар-Ола", coords: [56.6316, 47.886178] },
         { key: 2, name: "Юринский район", coords: [56.552092, 46.073073] },
         { key: 3, name: "Сернурский район", coords: [57.074832, 49.074066] },
-        { key: 4, name: "Волжский район", coords: [56.053804, 48.555280] },
+        { key: 4, name: "Волжский район", coords: [56.053804, 48.55528] },
       ],
       selectedRegion: "",
       primingTypes: [
@@ -130,25 +140,38 @@ export default {
   },
   watch: {
     selectedRegion: function (item) {
-      const regionCoords = this.regions.find(region => region.name === item).coords
-      this.$emit("select-region", regionCoords);
-    }
+      const regionCoords = this.regions.find(
+        (region) => region.name === item
+      ).coords
+      this.$emit("select-region", regionCoords)
+    },
   },
   methods: {
     showAdvanceFilters() {
       this.showAdvance = !this.showAdvance
     },
     calculate() {
-      if (this.selectedRegion && this.selectedCulture && this.selectedPriming) {
+      const isPolygon = store.get("account/coords").length > 2
+      if (
+        (this.selectedRegion || isPolygon) &&
+        this.selectedCulture &&
+        this.selectedPriming
+      ) {
         store.set("filters/selectedCulture", this.selectedCulture)
         store.set("filters/selectedRegion", this.selectedRegion)
         store.set("filters/selectedPriming", this.selectedPriming)
         axios
-          .get("http://localhost:3000/result", {
+          .get("http://localhost:3000/result/1", {
             params: {
+              complex: this.showAdvance && this.area,
+              area: this.area,
               selectedCulture: this.selectedCulture,
               selectedRegion: this.selectedRegion,
               selectedPriming: this.selectedPriming,
+              isClosed: this.selectedPriming == "Тепличный комплекс",
+              culture: this.cultures.find(
+                (el) => el.name === this.selectedCulture
+              ).key,
             },
           })
           .then((res) => {
@@ -159,7 +182,10 @@ export default {
     },
     selectRegion(region) {
       this.$emit("select-region", region)
-    }
+    },
+  },
+  created() {
+    store.set("account/coords", [])
   },
 }
 </script>

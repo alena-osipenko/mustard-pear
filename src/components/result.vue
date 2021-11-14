@@ -3,8 +3,37 @@
     <div class="pa2 ph3-ns pb3-ns">
       <div id="printJS-form" class="result-content w-100 mt1">
         <div>
-          <div>
-            <h1 class="f5 f4-ns mv0">Результат {{ result[0].rate }}/5</h1>
+          <div class="results-header">
+            <h1 class="f5 f4-ns mv0">Результат</h1>
+            <ul class="stars">
+              <li v-for="(i, index) in result.rate" :key="index">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="#f6de36"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 .288l2.833 8.718h9.167l-7.417 5.389 2.833 8.718-7.416-5.388-7.417 5.388 2.833-8.718-7.416-5.389h9.167z"
+                  />
+                </svg>
+              </li>
+
+              <li v-for="(i, index) in 5 - result.rate" :key="index">
+                <svg
+                  fill="#d2d7d3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 .288l2.833 8.718h9.167l-7.417 5.389 2.833 8.718-7.416-5.388-7.417 5.388 2.833-8.718-7.416-5.389h9.167z"
+                  />
+                </svg>
+              </li>
+            </ul>
           </div>
           <p class="f6 lh-copy measure mt2 mid-gray">
             Сельскохозяйственная культура
@@ -19,27 +48,31 @@
           </p>
           <!--      <pre>{{ result }}</pre>-->
           <div class="mt4">
-            <h3 class="f5 f4-ns mv0">Ресурсозатраты</h3>
-            <div>
-              <p class="f6 lh-copy measure mt2 mid-gray">
-                Водопотребление:
-                <span class="fw7"
-                >{{ this.result[0].requirements.water.value }}
-                  {{ this.result[0].requirements.water.description }}</span
-                >
-              </p>
-            </div>
-            <div>
-              <p class="f6 lh-copy measure mt2 mid-gray">
-                Энергопотребление:
-                <span class="fw7">
-                  {{ this.result[0].requirements.enegry.value }}
-                  {{ this.result[0].requirements.enegry.description }}
-                </span>
-              </p>
+            <h3 v-if="this.result.requirements" class="f5 f4-ns mv0">
+              Ресурсозатраты
+            </h3>
+            <div v-if="this.result.requirements">
+              <div>
+                <p class="f6 lh-copy measure mt2 mid-gray">
+                  Водопотребление:
+                  <span class="fw7"
+                  >{{ this.result.requirements.water.value }}
+                    {{ this.result.requirements.water.description }}</span
+                  >
+                </p>
+              </div>
+              <div>
+                <p class="f6 lh-copy measure mt2 mid-gray">
+                  Энергопотребление:
+                  <span class="fw7">
+                    {{ this.result.requirements.enegry.value }}
+                    {{ this.result.requirements.enegry.description }}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
-          <div class="mt3">
+          <div v-if="this.result.requirements" class="mt3">
             <a
               class="link underline blue hover-orange mr-auto"
               @click="showCalculate()"
@@ -47,7 +80,13 @@
               {{ this.isShowCalculate ? "Скрыть расчёты" : "Показать расчёты" }}
             </a>
           </div>
-
+          <div class="mt4">
+            <h3 class="f5 f4-ns mv0">Маржинальный анализ</h3>
+            <p>Объём реализации, ц: {{ this.result.economy.volume }}</p>
+            <p>Доход, : {{ this.result.economy.proceeds }}</p>
+            <p>Переменные затраты, руб: {{ this.result.economy.costs }}</p>
+            <p>Плановая прибыль: {{ this.result.economy.profit }}</p>
+          </div>
           <div v-if="isShowCalculate" class="mt-4">
             <div>
               <div>
@@ -66,14 +105,19 @@
                 <h1 class="f3 mv0 mt-3">
                   ИТОГО ЗАТРАТ, руб/га :
                   {{
-                    this.result[0].requirements.enegry.value * priceEnergy +
-                      (this.result[0].requirements.water.value * priceWater) /
-                      1000
+                    this.result.requirements.enegry.value * priceEnergy +
+                      (this.result.requirements.water.value * priceWater) / 1000
                   }}
                 </h1>
               </div>
             </div>
           </div>
+          <b-button
+            type="is-primary"
+            class="mt-6 ml-0"
+            @click="showCreditCalculateModal"
+          >Рассчитать кредит</b-button
+          >
         </div>
         <Map
           v-if="selectedRegionCoords"
@@ -88,16 +132,22 @@
         Распечатать результат
       </b-button>
     </div>
+    <Modal
+      :show="creditCalculateModal"
+      @exit-modal="creditCalculateModal = false"
+    />
   </article>
 </template>
 
 <script>
 import Map from "../components/map"
+import Modal from "../components/modal-comp"
 import printJS from "print-js"
 
 export default {
   components: {
     Map,
+    Modal,
   },
   name: "Result",
   props: ["result"],
@@ -110,6 +160,7 @@ export default {
       selectedRegion: "",
       selectedCulture: "",
       selectedRegionCoords: null,
+      creditCalculateModal: false,
     }
   },
   created() {
@@ -121,6 +172,9 @@ export default {
   methods: {
     showCalculate() {
       this.isShowCalculate = !this.isShowCalculate
+    },
+    showCreditCalculateModal() {
+      this.creditCalculateModal = true
     },
     printTest() {
       printJS({
@@ -143,6 +197,17 @@ export default {
 }
 .print-button {
   display: block;
+}
+.results-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.stars {
+  margin-left: 1rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 @media print {
   #printJS-form {
