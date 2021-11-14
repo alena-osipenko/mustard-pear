@@ -1,0 +1,18 @@
+{
+  "result": [
+    {
+      "rate": 4,
+      "CLADR": "12:04:0000000:5548",
+      "requirements": {
+        "water": {
+          "value": 8750000,
+          "description": "л/га, полив дождеванием"
+        },
+        "enegry": {
+          "value": 850000,
+          "description": "кВт×ч/га, световая зона III"
+        }
+      }
+    }
+  ]
+}
